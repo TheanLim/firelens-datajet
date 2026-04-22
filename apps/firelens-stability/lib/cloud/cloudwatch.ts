@@ -9,6 +9,7 @@ import { runECSTestCase } from "./ecs.js";
 import * as PathProvider from "../providers/path-provider.js"
 import { CloudWatchClient, PutDashboardCommand, PutMetricAlarmCommandInput } from "@aws-sdk/client-cloudwatch"; // ES Modules import
 import { PutMetricAlarmCommand } from "@aws-sdk/client-cloudwatch";
+import { CloudWatchLogsClient, PutRetentionPolicyCommand } from "@aws-sdk/client-cloudwatch-logs";
 
 export async function putDashboard(seed: IDashboardSeed) {
 
@@ -42,4 +43,12 @@ export async function putMetricAlarm(seed: IMetricAlarmSeed) {
         console.error(err);
     }
     */
+}
+
+export async function putLogGroupRetentionPolicy(
+    logGroupName: string, retentionInDays: number, region: string) {
+
+    const client = new CloudWatchLogsClient({ region });
+    const command = new PutRetentionPolicyCommand({ logGroupName, retentionInDays });
+    await client.send(command);
 }

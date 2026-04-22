@@ -8,6 +8,9 @@ import { runECSTestCase } from "../cloud/ecs.js";
 import * as PathProvider from "../providers/path-provider.js"
 import { processMetricAlarmsList } from "./metric-alarm-list-processor.js";
 import { processDashboardWidgetLists } from "./dashboard-widget-list-processor.js";
+import { putLogGroupRetentionPolicy } from "../cloud/cloudwatch.js";
+
+const CI_LOG_RETENTION_DAYS = 365;
 
 /* Execution specific details including the execution id */
 export async function generateExecutionContext(execution: IExecution): Promise<IExecutionContext> {
@@ -253,6 +256,16 @@ export async function recordTestCases(
 }
 
 export async function processListComponents(testCases: ITestCase[]) {
+    /* Set Container Insights log retention (default is 1 day — too short for stability tests) */
+    const { region, cluster } = testCases[0].config;
+    const ciLogGroup = `/aws/ecs/containerinsights/${cluster}/performance`;
+    try {
+        await putLogGroupRetentionPolicy(ciLogGroup, CI_LOG_RETENTION_DAYS, region);
+        console.log(`📋 Set log retention to ${CI_LOG_RETENTION_DAYS} days for ${ciLogGroup}`);
+    } catch (err) {
+        console.warn(`⚠️ Failed to set log retention for ${ciLogGroup}: ${err}`);
+    }
+
     await processMetricAlarmsList(testCases);
     await processDashboardWidgetLists(testCases);
     console.log("✨✨✨ Enabled monitoring ✨✨✨");
